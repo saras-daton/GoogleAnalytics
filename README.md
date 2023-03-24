@@ -111,7 +111,7 @@ This package contains models from the Bing Ads API which includes reports on {{s
 | **Category**                 | **Model**  | **Description** |
 | ------------------------- | ---------------| ----------------------- |
 |Performance | [GoogleAnalyticsEvents](models/BingAds/GoogleAnalyticsEvents.sql)  | This report provides long-term account performance and trends at an event level |
-|AdExtension | [GoogleAnalyticsEventsEventParams](models/BingAds/GoogleAnalyticsEventsEventParams.sql)  | This report provides long-term account performance and trends at an event parameter level |
+|Performance | [GoogleAnalyticsEventsEventParams](models/BingAds/GoogleAnalyticsEventsEventParams.sql)  | This report provides long-term account performance and trends at an event parameter level |
 
 
 ### For details about default configurations for Table Primary Key columns, Partition columns, Clustering columns, please refer the properties.yaml used for this package as below. 
