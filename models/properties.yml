@@ -1,0 +1,17 @@
+version: 2
+models:
+  - name: GoogleAnalyticsEvents
+    description: This report provides long-term account performance and trends at an event level
+    config : 
+      materialized : incremental
+      incremental_strategy : merge 
+      unique_key : ['event_timestamp','event_name','medium','user_pseudo_id','category','transaction_id']
+      cluster_by : ['event_timestamp','event_name']
+
+  - name: GoogleAnalyticsEventsEventParams
+    description: This report provides long-term account performance and trends at an event parameter level
+    config:
+      materialized : incremental
+      incremental_strategy : merge 
+      unique_key : ['event_timestamp','event_name','key','user_id','user_pseudo_id','string_value','int_value','double_value']
+      cluster_by : ['event_timestamp','event_name']
