@@ -1,19 +1,18 @@
 # Google Analytics Data Unification
 
-This dbt package is for the Bing Ads data unification Ingested by [Daton](https://sarasanalytics.com/daton/). [Daton](https://sarasanalytics.com/daton/) is the Unified Data Platform for Global Commerce with 100+ pre-built connectors and data sets designed for accelerating the eCommerce data and analytics journey by [Saras Analytics](https://sarasanalytics.com).
+This dbt package is for the Google Analytics 4 data unification ingested by Native Google Analytics Connector that can be clubbed with other packages ingested through [Daton](https://sarasanalytics.com/daton/). 
+[Daton](https://sarasanalytics.com/daton/) is the Unified Data Platform for Global Commerce with 100+ pre-built connectors and data sets designed for accelerating the eCommerce data and analytics journey by [Saras Analytics](https://sarasanalytics.com).
 
 ### Supported Datawarehouses:
 - BigQuery
-- Snowflake
 
 #### Typical challanges with raw data are:
 - Array/Nested Array columns which makes queries for Data Analytics complex
-- Data duplication due to look back period while fetching report data from Bing Ads
 - Seperate tables at marketplaces/Store, brand, account level for same kind of report/data feeds
 
 By doing Data Unification the above challenges can be overcomed and simplifies Data Analytics. 
 As part of Data Unification, the following funtions are performed:
-- Consolidation - Different marketplaces/Store/account & different brands would have similar raw Daton Ingested tables, which are consolidated into one table with column distinguishers brand & store
+- Consolidation - Different marketplaces/Store/account & different brands would have similar raw Ingested tables, which are consolidated into one table with column distinguishers brand & store
 - Deduplication - Based on primary keys, the data is De-duplicated and the latest records are only loaded into the consolidated stage tables
 - Incremental Load - Models are designed to include incremental load which when scheduled would update the tables regularly
 - Standardization -
@@ -22,8 +21,8 @@ As part of Data Unification, the following funtions are performed:
 	- Time Zone Conversion (Optional) - Raw Tables data created at Marketplace/Store/Account level may have data in local timezone of the corresponding marketplace/store/account. DateTime values that are in local timezone are standardized by converting to specified timezone using input offset hours.
 
 #### Prerequisite 
+Google Analytics Native Connector Setup to Big Query
 Daton Integrations for  
-- Bing Ads 
 - Exchange Rates(Optional, if currency conversion is not required)
 
 *Note:* 
@@ -45,7 +44,7 @@ packages:
 
 ## Required Variables
 
-This package assumes that you have an existing dbt project with a BigQuery/Snowflake profile connected & tested. Source data is located using the following variables which must be set in your `dbt_project.yml` file.
+This package assumes that you have an existing dbt project with a BigQuery profile connected & tested. Source data is located using the following variables which must be set in your `dbt_project.yml` file.
 ```yaml
 vars:
     raw_database: "your_database"
@@ -54,7 +53,7 @@ vars:
 
 ## Setting Target Schema
 
-Models will be create unified tables under the schema (<target_schema>_stg_bingads). In case, you would like the models to be written to the target schema or a different custom schema, please add the following in the dbt_project.yml file.
+Models will be create unified tables under the schema (<target_schema>_stg_googleanalytics). In case, you would like the models to be written to the target schema or a different custom schema, please add the following in the dbt_project.yml file.
 
 ```yaml
 models:
@@ -106,7 +105,7 @@ GoogleAnalyticsEventsEventParams: False
 
 ## Models
 
-This package contains models from the Bing Ads API which includes reports on {{sales, margin, inventory, product}}. The primary outputs of this package are described below.
+This package contains models from the Google Analytics 4 Native connector which includes reports {{at an event and event parameter level}}. The primary outputs of this package are described below.
 
 | **Category**                 | **Model**  | **Description** |
 | ------------------------- | ---------------| ----------------------- |
