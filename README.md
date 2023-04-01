@@ -57,7 +57,7 @@ Models will be create unified tables under the schema (<target_schema>_stg_googl
 
 ```yaml
 models:
-  bing_ads:
+  GoogleAnalytics:
     +schema: custom_schema_extension
 ```
 
