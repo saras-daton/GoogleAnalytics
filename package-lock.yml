@@ -1,0 +1,4 @@
+packages:
+- package: Saras-Daton/currency_exchange_rates
+  version: 1.0.2
+sha1_hash: e84e0868194878cae968b2f918436453a9349819

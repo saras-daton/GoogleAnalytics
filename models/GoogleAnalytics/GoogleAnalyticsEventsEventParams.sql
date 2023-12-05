@@ -9,60 +9,17 @@
 --depends_on: {{ ref('ExchangeRates') }}
 {% endif %}
 
-{% if is_incremental() %}
-{%- set max_loaded_query -%}
-SELECT coalesce(MAX(event_timestamp) - 2592000000,0) FROM {{ this }}
-{% endset %}
-
-{%- set max_loaded_results = run_query(max_loaded_query) -%}
-
-{%- if execute -%}
-{% set max_loaded = max_loaded_results.rows[0].values()[0] %}
-{% else %}
-{% set max_loaded = 0 %}
-{%- endif -%}
-{% endif %}
-
-{% set table_name_query %}
-{{set_table_name('%googleanalytics_%events')}}  
-{% endset %}  
-
-{% set results = run_query(table_name_query) %}
-
-{% if execute %}
-{# Return the first column #}
-{% set results_list = results.columns[0].values() %}
-{% else %}
-{% set results_list = [] %}
-{% endif %}
-
-
-{% for i in results_list %}
-    {% if var('get_brandname_from_tablename_flag') %}
-        {% set brand =i.split('.')[2].split('_')[var('brandname_position_in_tablename')] %}
-    {% else %}
-        {% set brand = var('default_brandname') %}
-    {% endif %}
-
-    {% if var('get_storename_from_tablename_flag') %}
-        {% set store =i.split('.')[2].split('_')[var('storename_position_in_tablename')] %}
-    {% else %}
-        {% set store = var('default_storename') %}
-    {% endif %}
-
-    {% set platform_name =i.split('.')[2].split('_')[var('platform_name_position')] %}
-
-    
-    SELECT * {{exclude()}} (row_num)
-    From (
+{# /*--calling macro for tables list and remove exclude pattern */ #}
+{% set result =set_table_name("google_analytics_events_tbl_ptrn","google_analytics_events_exclude_tbl_ptrn") %}
+{# /*--iterating through all the tables */ #}
+{% for i in result %}
         select
-        '{{brand}}' as brand,
-        '{{store}}' as store,
-        '{{platform_name}}' as platform_name,
+        {{ extract_brand_and_store_name_from_table(i, var('brandname_position_in_tablename'), var('get_brandname_from_tablename_flag'), var('default_brandname')) }} as brand,
+        {{ extract_brand_and_store_name_from_table(i, var('storename_position_in_tablename'), var('get_storename_from_tablename_flag'), var('default_storename')) }} as store,
+        {{ extract_brand_and_store_name_from_table(i, var('platform_name_position'), var('get_platform_from_tablename_flag'), var('default_platformname')) }} as platform_name,
         event_date,	
         event_timestamp,
         event_name,
-        event_params.key,
         event_previous_timestamp,
         event_value_in_usd,
         event_bundle_sequence_id,
@@ -78,99 +35,59 @@ SELECT coalesce(MAX(event_timestamp) - 2592000000,0) FROM {{ this }}
         stream_id,
         platform,	
         event_dimensions,
-        {% if target.type=='snowflake' %} 
-        value.VALUE:double_value :: varchar as double_value,
-        value.VALUE:int_value :: varchar as int_value,
-        value.VALUE:string_value :: varchar as string_value,
-        device.VALUE:category :: varchar as category,
-        device.VALUE:mobile_brand_name :: varchar as mobile_brand_name,
-        device.VALUE:mobile_model_name :: varchar as mobile_model_name,
-        device.VALUE:mobile_marketing_name :: varchar as mobile_marketing_name,
-        device.VALUE:mobile_os_hardware_model :: varchar as mobile_os_hardware_model,
-        device.VALUE:operating_system :: varchar as operating_system,
-        device.VALUE:operating_system_version :: varchar as operating_system_version,
-        device.VALUE:vendor_id :: varchar as vendor_id,
-        device.VALUE:advertising_id :: varchar as advertising_id,	
-        device.VALUE:language :: varchar as language,
-        device.VALUE:is_limited_ad_tracking :: varchar as is_limited_ad_tracking,
-        device.VALUE:time_zone_offset_seconds :: int as time_zone_offset_seconds,
-        device.VALUE:browser :: varchar as browser,
-        device.VALUE:browser_version :: varchar as browser_version,
-        device.VALUE:web_info,
-        traffic_source.VALUE:source :: varchar as source,
-        traffic_source.VALUE:medium :: varchar as medium,
-        traffic_source.VALUE:name :: varchar as name,
-        ecommerce.VALUE:total_item_quantity :: int as total_item_quantity,
-        ecommerce.VALUE:purchase_revenue_in_usd :: float as purchase_revenue_in_usd,
-        ecommerce.VALUE:purchase_revenue :: float as purchase_revenue,
-        ecommerce.VALUE:refund_value_in_usd :: float as refund_value_in_usd,
-        ecommerce.VALUE:refund_value :: float as refund_value,
-        ecommerce.VALUE:shipping_value_in_usd :: float as shipping_value_in_usd,
-        ecommerce.VALUE:shipping_value :: float as shipping_value,
-        ecommerce.VALUE:tax_value_in_usd :: float as tax_value_in_usd,
-        ecommerce.VALUE:tax_value :: float as tax_value,
-        ecommerce.VALUE:unique_items :: int as unique_items,
-        ecommerce.VALUE:transaction_id :: varchar as transaction_id,
-        {% else %}
-        coalesce(cast(value.double_value as string),'') double_value,
-        coalesce(cast(value.int_value as string),'') int_value,
-        coalesce(value.string_value,'') string_value,
-        device.category,	
-        device.mobile_brand_name,		
-        device.mobile_model_name,	
-        device.mobile_marketing_name,	
-        device.mobile_os_hardware_model,
-        device.operating_system,
-        device.operating_system_version,
-        device.vendor_id,		
-        device.advertising_id,		
-        device.language,	
-        device.is_limited_ad_tracking,	
-        device.time_zone_offset_seconds,	
-        device.browser,	
-        device.browser_version,	
-        device.web_info,	
-        traffic_source.source,
-        traffic_source.medium,
-        traffic_source.name,
-        ecommerce.total_item_quantity,	
-        ecommerce.purchase_revenue_in_usd,
-        ecommerce.purchase_revenue,
-        ecommerce.refund_value_in_usd,
-        ecommerce.refund_value,
-        ecommerce.shipping_value_in_usd,
-        ecommerce.shipping_value,
-        ecommerce.tax_value_in_usd,
-        ecommerce.tax_value,
-        ecommerce.unique_items,	
-        coalesce(ecommerce.transaction_id,'') transaction_id,
-        {% endif %}	
+        {{extract_nested_value("event_params","key","string")}} as event_params_key,
+        {{extract_nested_value("value","string_value","string")}} as value_string_value,
+        {{extract_nested_value("value","int_value","string")}} as value_int_value,
+        {{extract_nested_value("value","float_value","string")}} as value_float_value,
+        {{extract_nested_value("value","double_value","string")}} as value_double_value,
+
+        {{extract_nested_value("device","category","string")}} as device_category,
+        {{extract_nested_value("device","mobile_brand_name","string")}} as device_mobile_brand_name,
+        {{extract_nested_value("device","mobile_model_name","string")}} as device_mobile_model_name,
+        {{extract_nested_value("device","mobile_marketing_name","string")}} as device_mobile_marketing_name,
+        {{extract_nested_value("device","mobile_os_hardware_model","string")}} as device_mobile_os_hardware_model,
+        {{extract_nested_value("device","operating_system","string")}} as device_operating_system,
+        {{extract_nested_value("device","operating_system_version","string")}} as device_operating_system_version,
+        {{extract_nested_value("device","vendor_id","string")}} as device_vendor_id,
+        {{extract_nested_value("device","advertising_id","string")}} as device_advertsing_id,
+        {{extract_nested_value("device","language","string")}} as device_lanuage,
+        {{extract_nested_value("device","is_limited_ad_tracking","string")}} as device_is_limited_ad_tarcking,
+        {{extract_nested_value("device","time_zone_offset_seconds","string")}} as device_time_zone_offset_seconds,
+        {{extract_nested_value("device","browser","string")}} as device_browser,
+        {{extract_nested_value("device","browser_version","string")}} as device_browser_version,
+        {{extract_nested_value("traffic_source","name","string")}} as traffic_source_name,
+        {{extract_nested_value("traffic_source","medium","string")}} as traffic_source_medium,
+        {{extract_nested_value("traffic_source","source","string")}} as traffic_source_source,
+        {{extract_nested_value("ecommerce","total_item_quantity","numeric")}} as ecommerce_total_item_quantity,
+        {{extract_nested_value("ecommerce","purchase_revenue_in_usd","numeric")}} as ecommerce_purchase_revenue_in_usd,
+        {{extract_nested_value("ecommerce","purchase_revenue","numeric")}} as ecommerce_purchase_revenue,
+        {{extract_nested_value("ecommerce","refund_value_in_usd","numeric")}} as ecommerce_refund_value_in_usd,
+        {{extract_nested_value("ecommerce","refund_value","numeric")}} as ecommerce_refund_value,
+        {{extract_nested_value("ecommerce","shipping_value_in_usd","numeric")}} as ecommerce_shipping_value_in_usd,
+        {{extract_nested_value("ecommerce","shipping_value","numeric")}} as ecommerce_shipping_value,
+        {{extract_nested_value("ecommerce","tax_value_in_usd","numeric")}} as ecommerce_tax_value_in_usd,
+        {{extract_nested_value("ecommerce","tax_value","numeric")}} as ecommerce_tax_value,
+        {{extract_nested_value("ecommerce","unique_items","numeric")}} as ecommerce_unique_items,
+        {{extract_nested_value("ecommerce","transaction_id","string")}} as ecommerce_transaction_id,
+
         items,
+        a.{{daton_user_id()}} as _daton_user_id,
+        a.{{daton_batch_runtime()}} as _daton_batch_runtime,
+        a.{{daton_batch_id()}} as _daton_batch_id,
         current_timestamp() as _last_updated,
-        '{{env_var("DBT_CLOUD_RUN_ID", "manual")}}' as _run_id,
-        ROW_NUMBER() OVER (
-            PARTITION BY 
-            event_timestamp, 
-            event_name, 
-            {% if target.type=='snowflake' %} 
-            event_params.VALUE:key :: varchar as key,
-            value.VALUE:string_value :: varchar as string_value,
-            value.VALUE:int_value :: varchar as int_value,
-            value.VALUE:double_value :: varchar as double_value,
-            {% else %}
-            event_params.key, 
-            value.string_value, 
-            cast(value.int_value as string), 
-            cast(value.double_value as string), 
-            {% endif %}	
-            user_pseudo_id) row_num
+        '{{env_var("DBT_CLOUD_RUN_ID", "manual")}}' as _run_id
+
 	    from {{i}} a
             {{unnesting("event_params")}} 
+            {{multi_unnesting("event_params", "value")}}
+            {{unnesting("traffic_source")}}
+            {{unnesting("device")}}
+            {{unnesting("ecommerce")}}
             {% if is_incremental() %}
             {# /* -- this filter will only be applied on an incremental run */ #}
-            WHERE a.event_timestamp  >= {{max_loaded}}
+
+        WHERE a.{{daton_batch_runtime()}}  >= (select coalesce(max(_daton_batch_runtime) - {{ var('google_analytics_events_lookback') }},0) from {{ this }})
             {% endif %}
-        ) 
-        where row_num = 1
+        qualify ROW_NUMBER() OVER ( PARTITION BY  event_timestamp,event_name, event_params_key,value_string_value,value_int_value,value_double_value,user_pseudo_id order by _daton_batch_runtime) = 1
     {% if not loop.last %} union all {% endif %}
 {% endfor %}

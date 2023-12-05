@@ -7,31 +7,39 @@ version: '1.0.0'
 config-version: 2
 require-dbt-version: [">=1.0.0", "<2.0.0"]
 
+profile: edm_data_transformation
+
 vars:
-  raw_database: "GoogleAnalytics" #equivalent to project_id in BigQuery
+  raw_database: "edm-saras" #equivalent to project_id in BigQuery
     # Example Database name
-  raw_schema: "Daton" #equivalent to dataset in BigQuery
+  raw_schema: "EDM_Daton" #equivalent to dataset in BigQuery
     # Example Schema name
 
   # Google Analytics Account Platform Name Position
+  get_platform_from_tablename_flag: False
   platform_name_position: 2
+  default_platformname: "Platform" 
 
-  get_brandname_from_tablename_flag: True
+  get_brandname_from_tablename_flag: False
   brandname_position_in_tablename: 0
     # Example- Daton Integration Name: Nike_US_SponsoredBrands --> Position 0, separated by '_'
-  default_brandname: "" 
+  default_brandname: "Brand" 
     # Example- default_brandname: "Nike" --> for Single Brand users, with no Brandname in Daton Integration Name
 
-  get_storename_from_tablename_flag: True 
+  get_storename_from_tablename_flag: False 
   storename_position_in_tablename: 1
     # Example- Daton Integration Name: Nike_US_SponsoredBrands --> Position 1, separated by '_'
-  default_storename: "" 
+  default_storename: "Store" 
     # Example- default_storename: "US" --> for Single Store users, with no Storename in Daton Integration Name
 
   currency_conversion_flag: False
   
   GoogleAnalyticsEvents : True
   GoogleAnalyticsEventsEventParams : True
+
+  google_analytics_events_tbl_ptrn: '%googleanalytics_%events%'
+  google_analytics_events_exclude_tbl_ptrn: ''
+  google_analytics_events_lookback: 172800000
 
   
 # These configurations specify where dbt should look for different types of files.
