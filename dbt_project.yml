@@ -33,6 +33,8 @@ vars:
     # Example- default_storename: "US" --> for Single Store users, with no Storename in Daton Integration Name
 
   currency_conversion_flag: False
+  timezone_conversion_flag: True
+  to_timezone: 'America/Los_Angeles'
   
   GoogleAnalyticsEvents : True
   GoogleAnalyticsEventsEventParams : True

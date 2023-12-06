@@ -17,10 +17,16 @@
         {{ extract_brand_and_store_name_from_table(i, var('brandname_position_in_tablename'), var('get_brandname_from_tablename_flag'), var('default_brandname')) }} as brand,
         {{ extract_brand_and_store_name_from_table(i, var('storename_position_in_tablename'), var('get_storename_from_tablename_flag'), var('default_storename')) }} as store,
         {{ extract_brand_and_store_name_from_table(i, var('platform_name_position'), var('get_platform_from_tablename_flag'), var('default_platformname')) }} as platform_name,
-        event_date,	
-        event_timestamp,
+        
+        {% if target.type=='snowflake' %}
+        TO_DATE(event_date, 'YYYYMMDD') as 	event_date,
+        TO_TIMESTAMP(event_timestamp / 1000000) as event_timestamp,
+        {% else %}
+        DATE(SUBSTR(event_date, 1, 4) || '-' || SUBSTR(event_date, 5, 2) || '-' || SUBSTR(event_date, 7, 2)) as event_date,	
+        TIMESTAMP_MICROS(event_timestamp) as event_timestamp,
+        {% endif %}
         event_name,
-        event_previous_timestamp,	
+        TIMESTAMP_MICROS(event_previous_timestamp) as event_previous_timestamp,	
         event_value_in_usd,
         event_bundle_sequence_id,
         event_server_timestamp_offset,
@@ -113,7 +119,7 @@
         a.{{daton_batch_runtime()}} as _daton_batch_runtime,
         a.{{daton_batch_id()}} as _daton_batch_id,
         current_timestamp() as _last_updated,
-        '{{env_var("DBT_CLOUD_RUN_ID", "manual")}}' as _run_id
+        '{{env_var("DBT_CLOUD_RUN_ID", "manual")}}' as _run_id 
 	    from {{i}} a
                 {{unnesting("privacy_info")}}
                 {{unnesting("user_properties")}}
